@@ -18,12 +18,174 @@ Answer 1
 ``` r
 set.seed(1)
 df <- tbl_df(Boston)
-inTraining <- createDataPartition(df$medv, p = .75, list = F)
-training <- df[inTraining, ]
-testing <- df[-inTraining, ]
-set.seed(10832)
-#...couldn't see the rest of the code that we went over in class and couldn't figure it out with troubleshooting, but you mentioned it will not be graded. Hoping to get the rest of the code next class.
+for (k in 1:20) {
+  inTraining <- createDataPartition(df$medv, p = .75, list = F)
+  training <- df[inTraining, ]
+  testing <- df[-inTraining, ]
+  mtry <- c(3:9)
+  ntree <- seq(25, 500, len = 20)
+  results <- tibble(trial = rep(NA, 140),
+  mtry = rep(NA, 140),
+  ntree = rep(NA, 140),
+  mse = rep(NA, 140))
+  for(i in 1:7) {
+    cat(sprintf('Trial: %s, mtry: %s --- %s\n', k, mtry[i],
+Sys.time()))
+    for(j in 1:20) {
+      rf_train <- randomForest(medv ~ ., data = training, mtry = mtry[i], ntree = ntree[j])
+      mse <- mean((predict(rf_train, newdata = testing) - testing$medv)^2)
+      results[(i-1)*20 + j, ] <- c(k, mtry[i], ntree[j], mse)
+    }
+  }
+  if(exists("results_total")) {
+    results_total <- bind_rows(results_total, results)
+  }
+  else(
+    results_total <- results
+  )
+}
 ```
+
+    ## Trial: 1, mtry: 3 --- 2019-03-08 10:22:29
+    ## Trial: 1, mtry: 4 --- 2019-03-08 10:22:34
+    ## Trial: 1, mtry: 5 --- 2019-03-08 10:22:40
+    ## Trial: 1, mtry: 6 --- 2019-03-08 10:22:47
+    ## Trial: 1, mtry: 7 --- 2019-03-08 10:22:54
+    ## Trial: 1, mtry: 8 --- 2019-03-08 10:23:02
+    ## Trial: 1, mtry: 9 --- 2019-03-08 10:23:12
+    ## Trial: 2, mtry: 3 --- 2019-03-08 10:23:22
+    ## Trial: 2, mtry: 4 --- 2019-03-08 10:23:26
+    ## Trial: 2, mtry: 5 --- 2019-03-08 10:23:32
+    ## Trial: 2, mtry: 6 --- 2019-03-08 10:23:39
+    ## Trial: 2, mtry: 7 --- 2019-03-08 10:23:46
+    ## Trial: 2, mtry: 8 --- 2019-03-08 10:23:55
+    ## Trial: 2, mtry: 9 --- 2019-03-08 10:24:04
+    ## Trial: 3, mtry: 3 --- 2019-03-08 10:24:15
+    ## Trial: 3, mtry: 4 --- 2019-03-08 10:24:19
+    ## Trial: 3, mtry: 5 --- 2019-03-08 10:24:25
+    ## Trial: 3, mtry: 6 --- 2019-03-08 10:24:31
+    ## Trial: 3, mtry: 7 --- 2019-03-08 10:24:39
+    ## Trial: 3, mtry: 8 --- 2019-03-08 10:24:47
+    ## Trial: 3, mtry: 9 --- 2019-03-08 10:24:56
+    ## Trial: 4, mtry: 3 --- 2019-03-08 10:25:07
+    ## Trial: 4, mtry: 4 --- 2019-03-08 10:25:11
+    ## Trial: 4, mtry: 5 --- 2019-03-08 10:25:17
+    ## Trial: 4, mtry: 6 --- 2019-03-08 10:25:23
+    ## Trial: 4, mtry: 7 --- 2019-03-08 10:25:31
+    ## Trial: 4, mtry: 8 --- 2019-03-08 10:25:39
+    ## Trial: 4, mtry: 9 --- 2019-03-08 10:25:49
+    ## Trial: 5, mtry: 3 --- 2019-03-08 10:25:59
+    ## Trial: 5, mtry: 4 --- 2019-03-08 10:26:03
+    ## Trial: 5, mtry: 5 --- 2019-03-08 10:26:09
+    ## Trial: 5, mtry: 6 --- 2019-03-08 10:26:15
+    ## Trial: 5, mtry: 7 --- 2019-03-08 10:26:23
+    ## Trial: 5, mtry: 8 --- 2019-03-08 10:26:31
+    ## Trial: 5, mtry: 9 --- 2019-03-08 10:26:40
+    ## Trial: 6, mtry: 3 --- 2019-03-08 10:26:50
+    ## Trial: 6, mtry: 4 --- 2019-03-08 10:26:55
+    ## Trial: 6, mtry: 5 --- 2019-03-08 10:27:00
+    ## Trial: 6, mtry: 6 --- 2019-03-08 10:27:07
+    ## Trial: 6, mtry: 7 --- 2019-03-08 10:27:14
+    ## Trial: 6, mtry: 8 --- 2019-03-08 10:27:22
+    ## Trial: 6, mtry: 9 --- 2019-03-08 10:27:32
+    ## Trial: 7, mtry: 3 --- 2019-03-08 10:27:42
+    ## Trial: 7, mtry: 4 --- 2019-03-08 10:27:47
+    ## Trial: 7, mtry: 5 --- 2019-03-08 10:27:52
+    ## Trial: 7, mtry: 6 --- 2019-03-08 10:27:59
+    ## Trial: 7, mtry: 7 --- 2019-03-08 10:28:06
+    ## Trial: 7, mtry: 8 --- 2019-03-08 10:28:14
+    ## Trial: 7, mtry: 9 --- 2019-03-08 10:28:24
+    ## Trial: 8, mtry: 3 --- 2019-03-08 10:28:34
+    ## Trial: 8, mtry: 4 --- 2019-03-08 10:28:39
+    ## Trial: 8, mtry: 5 --- 2019-03-08 10:28:44
+    ## Trial: 8, mtry: 6 --- 2019-03-08 10:28:51
+    ## Trial: 8, mtry: 7 --- 2019-03-08 10:28:58
+    ## Trial: 8, mtry: 8 --- 2019-03-08 10:29:06
+    ## Trial: 8, mtry: 9 --- 2019-03-08 10:29:15
+    ## Trial: 9, mtry: 3 --- 2019-03-08 10:29:25
+    ## Trial: 9, mtry: 4 --- 2019-03-08 10:29:30
+    ## Trial: 9, mtry: 5 --- 2019-03-08 10:29:35
+    ## Trial: 9, mtry: 6 --- 2019-03-08 10:29:42
+    ## Trial: 9, mtry: 7 --- 2019-03-08 10:29:49
+    ## Trial: 9, mtry: 8 --- 2019-03-08 10:29:58
+    ## Trial: 9, mtry: 9 --- 2019-03-08 10:30:07
+    ## Trial: 10, mtry: 3 --- 2019-03-08 10:30:17
+    ## Trial: 10, mtry: 4 --- 2019-03-08 10:30:22
+    ## Trial: 10, mtry: 5 --- 2019-03-08 10:30:27
+    ## Trial: 10, mtry: 6 --- 2019-03-08 10:30:33
+    ## Trial: 10, mtry: 7 --- 2019-03-08 10:30:41
+    ## Trial: 10, mtry: 8 --- 2019-03-08 10:30:49
+    ## Trial: 10, mtry: 9 --- 2019-03-08 10:30:58
+    ## Trial: 11, mtry: 3 --- 2019-03-08 10:31:09
+    ## Trial: 11, mtry: 4 --- 2019-03-08 10:31:13
+    ## Trial: 11, mtry: 5 --- 2019-03-08 10:31:18
+    ## Trial: 11, mtry: 6 --- 2019-03-08 10:31:25
+    ## Trial: 11, mtry: 7 --- 2019-03-08 10:31:32
+    ## Trial: 11, mtry: 8 --- 2019-03-08 10:31:40
+    ## Trial: 11, mtry: 9 --- 2019-03-08 10:31:50
+    ## Trial: 12, mtry: 3 --- 2019-03-08 10:32:00
+    ## Trial: 12, mtry: 4 --- 2019-03-08 10:32:04
+    ## Trial: 12, mtry: 5 --- 2019-03-08 10:32:10
+    ## Trial: 12, mtry: 6 --- 2019-03-08 10:32:16
+    ## Trial: 12, mtry: 7 --- 2019-03-08 10:32:23
+    ## Trial: 12, mtry: 8 --- 2019-03-08 10:32:31
+    ## Trial: 12, mtry: 9 --- 2019-03-08 10:32:41
+    ## Trial: 13, mtry: 3 --- 2019-03-08 10:32:51
+    ## Trial: 13, mtry: 4 --- 2019-03-08 10:32:55
+    ## Trial: 13, mtry: 5 --- 2019-03-08 10:33:01
+    ## Trial: 13, mtry: 6 --- 2019-03-08 10:33:07
+    ## Trial: 13, mtry: 7 --- 2019-03-08 10:33:15
+    ## Trial: 13, mtry: 8 --- 2019-03-08 10:33:23
+    ## Trial: 13, mtry: 9 --- 2019-03-08 10:33:32
+    ## Trial: 14, mtry: 3 --- 2019-03-08 10:33:43
+    ## Trial: 14, mtry: 4 --- 2019-03-08 10:33:47
+    ## Trial: 14, mtry: 5 --- 2019-03-08 10:33:53
+    ## Trial: 14, mtry: 6 --- 2019-03-08 10:33:59
+    ## Trial: 14, mtry: 7 --- 2019-03-08 10:34:07
+    ## Trial: 14, mtry: 8 --- 2019-03-08 10:34:15
+    ## Trial: 14, mtry: 9 --- 2019-03-08 10:34:25
+    ## Trial: 15, mtry: 3 --- 2019-03-08 10:34:35
+    ## Trial: 15, mtry: 4 --- 2019-03-08 10:34:40
+    ## Trial: 15, mtry: 5 --- 2019-03-08 10:34:45
+    ## Trial: 15, mtry: 6 --- 2019-03-08 10:34:52
+    ## Trial: 15, mtry: 7 --- 2019-03-08 10:34:59
+    ## Trial: 15, mtry: 8 --- 2019-03-08 10:35:07
+    ## Trial: 15, mtry: 9 --- 2019-03-08 10:35:17
+    ## Trial: 16, mtry: 3 --- 2019-03-08 10:35:27
+    ## Trial: 16, mtry: 4 --- 2019-03-08 10:35:31
+    ## Trial: 16, mtry: 5 --- 2019-03-08 10:35:37
+    ## Trial: 16, mtry: 6 --- 2019-03-08 10:35:43
+    ## Trial: 16, mtry: 7 --- 2019-03-08 10:35:50
+    ## Trial: 16, mtry: 8 --- 2019-03-08 10:35:59
+    ## Trial: 16, mtry: 9 --- 2019-03-08 10:36:08
+    ## Trial: 17, mtry: 3 --- 2019-03-08 10:36:18
+    ## Trial: 17, mtry: 4 --- 2019-03-08 10:36:23
+    ## Trial: 17, mtry: 5 --- 2019-03-08 10:36:28
+    ## Trial: 17, mtry: 6 --- 2019-03-08 10:36:35
+    ## Trial: 17, mtry: 7 --- 2019-03-08 10:36:42
+    ## Trial: 17, mtry: 8 --- 2019-03-08 10:36:50
+    ## Trial: 17, mtry: 9 --- 2019-03-08 10:37:00
+    ## Trial: 18, mtry: 3 --- 2019-03-08 10:37:10
+    ## Trial: 18, mtry: 4 --- 2019-03-08 10:37:15
+    ## Trial: 18, mtry: 5 --- 2019-03-08 10:37:20
+    ## Trial: 18, mtry: 6 --- 2019-03-08 10:37:26
+    ## Trial: 18, mtry: 7 --- 2019-03-08 10:37:34
+    ## Trial: 18, mtry: 8 --- 2019-03-08 10:37:42
+    ## Trial: 18, mtry: 9 --- 2019-03-08 10:37:52
+    ## Trial: 19, mtry: 3 --- 2019-03-08 10:38:02
+    ## Trial: 19, mtry: 4 --- 2019-03-08 10:38:06
+    ## Trial: 19, mtry: 5 --- 2019-03-08 10:38:12
+    ## Trial: 19, mtry: 6 --- 2019-03-08 10:38:18
+    ## Trial: 19, mtry: 7 --- 2019-03-08 10:38:26
+    ## Trial: 19, mtry: 8 --- 2019-03-08 10:38:34
+    ## Trial: 19, mtry: 9 --- 2019-03-08 10:38:43
+    ## Trial: 20, mtry: 3 --- 2019-03-08 10:38:54
+    ## Trial: 20, mtry: 4 --- 2019-03-08 10:38:58
+    ## Trial: 20, mtry: 5 --- 2019-03-08 10:39:04
+    ## Trial: 20, mtry: 6 --- 2019-03-08 10:39:10
+    ## Trial: 20, mtry: 7 --- 2019-03-08 10:39:17
+    ## Trial: 20, mtry: 8 --- 2019-03-08 10:39:26
+    ## Trial: 20, mtry: 9 --- 2019-03-08 10:39:35
 
 Problem 2
 ---------
