@@ -1,6 +1,6 @@
 ---
 title: 'Homework 4: Bags, Forests, Boosts, oh my'
-author: "Your Name Goes Here"
+author: "Brooke Seibert"
 date: "2/28/2019"
 output: github_document
 ---
@@ -9,21 +9,154 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Problem 1
+```{r libs, message = F, warning = F, include = F}
+library(tidyverse)
+library(broom)
+library(glmnet)
+library(caret)
+library(ISLR)
+library(janitor)
+library(stringr)
+library(rpart)
+library(rpart.plot)
+library(partykit)
+library(randomForest)
+library(MASS)
+library(gbm)
+library(tree)
+theme_set(theme_bw())
+```
 
+## Problem 1
 Problem 7 from Chapter 8 in the text. To be specific, please use a sequence of
 `ntree` from 25 to 500 in steps of 25 and `mtry` from 3 to 9 for by 1. 
 
+In the lab, we applied random forests to the Boston data using mtry=6 and using ntree=25 and
+ntree=500. Create a plot displaying the test error resulting from random forests on this data
+set for a more comprehensive range of values for mtry and ntree. You can model your plot after
+Figure 8.10. Describe the results obtained.
+
 ## Answer 1
+*There is a negative relationship between the testing MSE and the number of trees.  As trees is increased, the testing MSE decreases. Also, having just one tree results in a much higher testing MSE. The testing MSE for all predictors is the highest, while the test MSE for half of the predictors has the lowest testing MSE*
+```{r, plot test errors from random forests}
+set.seed(1)
+df <- tbl_df(Boston)
+inTraining <- createDataPartition(df$medv, p = .75, list = F)
+training <- df[inTraining, ]
+testing <- df[-inTraining, ]
+set.seed(10832)
+#...couldn't see the rest of the code that we went over in class and couldn't figure it out with troubleshooting, but you mentioned it will not be graded. Hoping to get the rest of the code next class.
+```
 
 ## Problem 2
+Problem 8 from Chapter 8 in the text. Set your seed with 9823 and split into train/test
+using 50\% of your data in each split. In addition to parts (a) - (e), do the following:
 
-Problem 8 from Chapter 8 in the text. Set your seed with 9823 and split into 
-train/test using 50\% of your data in each split. In addition to 
-parts (a) - (e), do the following:
-
-1. Fit a gradient-boosted tree to the training data and report the estimated 
-test MSE. 
-2. Fit a multiple regression model to the training data and report the 
-estimated test MSE
+1. Fit a gradient-boosted tree to the training data and report the estimated test MSE. 
+2. Fit a multiple regression model to the training data and report the estimated test MSE
 3. Summarize your results. 
+
+Problem 8: In the lab, a classiﬁcation tree was applied to the Carseats data set after converting Sales into a
+qualitative response variable. Now we will seek to predict Sales using regression trees and related
+approaches, treating the response as a quantitative variable.
+
+a. Split the data set into a training set and a test set.
+```{r, 8a. partition data}
+set.seed(9823)
+df <- tbl_df(Carseats)
+inTraining <- createDataPartition(df$Sales, p = .50, list = F)
+training_c <- df[inTraining, ]
+testing_c  <- df[-inTraining, ]
+```
+
+b. Fit a regression tree to the training set. Plot the tree, and interpret the results. What test MSE do you obtain?
+*Testing MSE is 4.48.*
+```{r, 8b. training regression tree}
+tree_c <- rpart::rpart(Sales ~ ., data = training_c, control = rpart.control(minsplit = 20))
+summary(tree_c)
+prp(tree_c)
+plot(as.party(tree_c))
+predict_c <- predict(tree_c, testing_c)
+mean((testing_c$Sales - predict_c)^2)
+```
+
+c. Use cross-validation in order to determine the optimal level of tree complexity. Does pruning the tree improve the test MSE?
+*Pruning the tree changes testing MSE to 6.17*
+```{r, 8c. cross validation}
+fitted_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
+cv_tree_c <- train(Sales ~ ., data = training_c, method = "rpart", trControl = fitted_control)
+plot(cv_tree_c)
+plot(as.party(cv_tree_c$finalModel))
+predict_c_2 = predict(cv_tree_c, testing_c)
+mean((testing_c$Sales - predict_c_2)^2)
+```
+
+d. Use the bagging approach in order to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important.
+*The testing MSE has decreased to 3.07. The most important variables are Price, ShelveLoc, and CompPrice.*
+```{r, 8d. bagging analysis}
+bag_c <- randomForest(Sales ~ ., data = training_c, mtry = 10)
+bag_c
+test_predict <- predict(bag_c, newdata = testing_c)
+test_c <- testing_c %>%
+  mutate(y_hat_bags = test_predict,
+         sq_bags = (y_hat_bags - Sales)^2)
+mean(test_c$sq_bags)
+importance(bag_c)
+```
+
+e. Use random forests to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important. Describe the eﬀect of m, the number of variables considered at each split, on the error rate obtained.
+*The testing MSE has reduced again after the random forest.  The new value is 2.86.*
+*The most important varaibles remain to be Price, ShelveLoc, and CompPrice.*
+```{r, 8e. random forests analysis}
+rf_c <- randomForest(Sales ~ ., data = training_c, mtry = 10)
+rf_c
+predict_3 = predict(rf_c, testing_c)
+mean((testing_c$Sales - predict_3)^2)
+importance(rf_c)
+```
+
+Additional parts:
+1. Fit a gradient-boosted tree to the training data and report the estimated test MSE. 
+*Thes testing MSE is 1.825.*
+```{r, 8.1 gradient-boosted tree}
+#gradient-boosted training data tree
+grid <- expand.grid(interaction.depth = c(1, 3), 
+                    n.trees = seq(0, 2000, by = 100),
+                    shrinkage = c(.01, 0.001),
+                    n.minobsinnode = 10)
+trainControl <- trainControl(method = "cv", number = 5)
+gbm_c <- train(Sales ~ ., 
+                    data = training_c, 
+                    distribution = "gaussian", 
+                    method = "gbm",
+                    trControl = trainControl, 
+                    tuneGrid = grid,
+                    verbose = FALSE)
+gbm_c
+plot(gbm_c)
+#testing MSE
+predict_4 = predict(gbm_c, testing_c)
+mean((testing_c$Sales - predict_4)^2)
+```
+
+2. Fit a multiple regression model to the training data and report the estimated test MSE
+*The testing MSE is 1.02.*
+```{r, 8.2 multiple regression on training data}
+#multiple regression with training data
+lm_c <- lm(Sales ~ ., data = training_c)
+summary(lm_c)
+#stepwise regression
+stepwise_c <- stepAIC(lm_c, direction='backward')
+stepwise_c$anova
+predict_5 = predict(stepwise_c, testing_c)
+mean((testing_c$Sales - predict_5)^2)
+```
+
+3. Summarize your results.
+*The best model with the lowest testing MSE of 1.02 is the backwards stepwise regression model.*
+*Regression Tree MSE = 4.48*
+*CV Regression Tree MSE = 6.17*
+*Bagged Random Forest MSE = 3.07*
+*Random Forest MSE = 2.86*
+*Gradient Boosted Model MSE = 1.825*
+*Backwards Stepwise Regression MSE = 1.01*
